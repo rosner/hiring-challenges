@@ -46,4 +46,25 @@ For quick iteration (and as suggested in the challenge ReadMe) I extracted the `
 
 > research and use of suitable data structure for a specific use case. explain which and why.
 
-My basic solution 
+My basic solution uses a list as an accumulator and a variable that holds the current minute under process. All user ids are captured and as soon as a new minute is detected the content of the accumulator is converted into a set and thus contains the unique user ids. Everything is printed to stdout at this point. The accumulator is emptied and the variable for the minute under process is set to the newly observed minute.
+
+Why did I built it this way? Because it worked in the first attempt. 
+
+> when creating e.g. per minute statistics, how do you handle frames that arrive late or frames with a random timestamp (e.g. hit by a bitflip), describe a strategy?
+
+I'm sure my basic implementation wouldn't work with variations of these edge cases. I can think of different strategies:
+    
+- If this is an internal use case for reporting one could try and agree on some form of accuracy metric with stakeholders. You'd have to change the implementation to detect random or delayed messages and report those separately. Ideally close to where the statistics are being reported. This way at least stakeholders could see metrics side by side and consider those when making decisions.
+
+- Use different data structures and algorithms. One approach I can think of here would be to use a dictionary with the minutes (e.g., as formatted string) as key and the value would be the same list of user ids. Further I would move away from the very simple conditional that checks for a new minute. Instead I can think of some threshold based condition that checks how often a new minute has been seen. 
+The downside of this approach might be though that the time it takes to output result would increase. However I think with what I roughly described above one would have a more fine grained control to tweak the parameters of when to display data and how big the window would be for delayed messages. 
+
+    As for random timestamps, I can think of some sort of "trash" key which would be reported as well. This way it could be monitored and if there's high variance it could be an alarming signal that something might off and it should be investigated.
+
+---
+
+> scalability: explain how you would scale your approach
+I assume that _scale_ here means scaling in the context of consuming Kafka messages. If my research and understanding is correct then there's two metaphorical knobs to turn:
+
+Topic partitioning and multiple consumers/consumer groups
+I went with simply one partition for the topic `doodle-challenge`. To support a higher throughput a basic approach I would try is to increase the number of partition for the topic where the messages are written to. This would later on allow me to use multiple consumers grouped in so called consumer groups to process from specific partitions respectively. Kafka would under the hood make sure to send messages from one partition to a specific consumer. 
